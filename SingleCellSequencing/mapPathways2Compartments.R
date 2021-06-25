@@ -1,4 +1,6 @@
 options(java.parameters = "-Xmx7g")
+
+
 # Load libraries and devtools
 library(matlab)
 library(GSVA)
@@ -14,56 +16,68 @@ r3dDefaults$windowRect=c(0,50, 800, 800)
 devtools::source_url("https://github.com/noemiandor/Utils/blob/master/Pathways/getGenesInvolvedIn.R?raw=TRUE")
 devtools::source_url("https://github.com/noemiandor/Utils/blob/master/Pathways/getAllPathways.R?raw=TRUE")
 devtools::source_url("https://github.com/noemiandor/Utils/blob/master/grpstats.R?raw=TRUE")
-# setwd("~/Projects/PMO/MeasuringFitnessPerClone/code/SingleCellSequencing")
-setwd("/mnt/ix1/Projects/M005_MeasuringFitnessPerClone_2019/code/SingleCellSequencing")
+#devtools::source_url("https://github.com/noemiandor/Utils/blob/master/Pathways/Pathway_GeneSets_Reactome.RObj")
+
+#setwd("./SingleCellSequencing")
+
+
+
 source("get_compartment_coordinates.R")
 source("get_compartment_coordinates_FromAllen.R")
 source("alignPathways2Compartments.R")
-# source("~/get_compartment_coordinates.R")
-# pathwayMapFile = "~/NCBI2Reactome_PE_All_Levels_sapiens.txt"
+
 pathwayMapFile = "NCBI2Reactome_PE_All_Levels_sapiens.txt"
 CELLLINE="SNU-668"
-ROOTD = tools::file_path_as_absolute("../../data/")
-OUTD=paste0("../../results/pathwayCoordinates_3D", filesep, CELLLINE)
-dir.create(OUTD,recursive = T)
+ROOTD = tools::file_path_as_absolute("../data")
+OUTD=paste0("../results/pathwayCoordinates_3D", filesep, CELLLINE)
+print(OUTD)
+ifelse(!dir.exists(OUTD), dir.create(OUTD, recursive = T), FALSE)
 
-# coord = get_Compartment_coordinates(300)
+#presumably this is printing out the image?
 coord = get_compartment_coordinates_FromAllen(cytosolF=NULL, nucleusF = paste0(ROOTD,filesep,"3Dbrightfield/allencell/D03_FijiOutput/DNA_anothercell.csv"), mitoF = paste0(ROOTD,filesep,"3Dbrightfield/allencell/D03_FijiOutput/Mito_anothercell.csv"));
-# coord = get_compartment_coordinates_FromAllen(nucleusF = paste0(ROOTD,filesep,"3Dbrightfield/allencell/E03_FijiOutput/SNU16C_cell.csv"), mitoF = NULL);
-rgl::movie3d(
-  movie="CellCompartmentsIn3D_Placeholder", 
-  # rgl::spin3d( axis = c(0, 0, 1), rpm = 2),
-  rgl::spin3d( axis = c(1, 1, 1), rpm = 3),
-  duration = 20, 
-  dir = "~/Downloads/",
-  type = "gif", 
-  clean = TRUE
-)
-rgl.close()
+
+# #create placeholder movie
+# rgl::movie3d(
+#   movie="CellCompartmentsIn3D_Placeholder", 
+#   rgl::spin3d( axis = c(1, 1, 1), rpm = 3),
+#   duration = 20, 
+#   dir = "~/Downloads/",
+#   type = "gif", 
+#   clean = TRUE
+# )
+# rgl.close()
 
 
 # Expression profiles of all detected genes for clone 9 in the cell line.
 cID = 9
 clones = cloneid::getSubclones(CELLLINE, whichP="TranscriptomePerspective")
 pqFile = paste0(OUTD,filesep,names(clones)[cID],".RObj")
-if(file.exists(pqFile)){
-  load(pqFile)
-}else{
-  p = getSubProfiles(as.numeric(cloneid::extractID(names(clones)[cID])))
-  # Exclude copy number profile (keep only expression profile)
-  ex = p[-grep(":", rownames(p)),]
-  # Now let's quantify pathway expression based on this expression
-  gs=getAllPathways(include_genes=T, loadPresaved = T);     
-  gs=gs[sapply(gs, length)>=5]
-  pq <- gsva(ex, gs, kcdf="Poisson", mx.diff=T, verbose=FALSE, parallel.sz=2, min.sz=10)
-  pq <- rescale(pq, to = c(0,30000))
-  save(pq, file=paste0(OUTD,filesep,names(clones)[cID],".RObj"))
-}
-ccState = sapply(colnames(pq), function(x) cloneid::getState(x,whichP = "TranscriptomePerspective"))
+print(pqFile)
+
+load(pqFile)
+
+# if(file.exists(pqFile)){
+#   load(pqFile)
+
+# }else{
+#   p = getSubProfiles(as.numeric(cloneid::extractID(names(clones)[cID])))
+#   # Exclude copy number profile (keep only expression profile)
+#   require(DBI)
+#   ex = p[-grep(":", rownames(p)),]
+#   # Now let's quantify pathway expression based on this expression
+#   gs=getAllPathways(include_genes=T, loadPresaved = T);     
+#   gs=gs[sapply(gs, length)>=5]
+#   pq <- gsva(ex, gs, kcdf="Poisson", mx.diff=T, verbose=FALSE, parallel.sz=2, min.sz=10)
+#   pq <- rescale(pq, to = c(0,30000))
+#   save(pq, file=paste0(OUTD,filesep,names(clones)[cID],".RObj"))
+# }
+
+ccState = sapply(colnames(pqFile), function(x) cloneid::getState(x,whichP = "TranscriptomePerspective"))
 
 
 ## Pathway information:
 path2locmap<-read.table(pathwayMapFile, header = FALSE, sep = "\t", dec = ".", comment.char="", quote="", check.names = F, stringsAsFactors = F)
+
 # Here we replace all compartment names in the path2locmap with their counterpart in coords column names
 path2locmap$V3 <- sapply(strsplit(path2locmap$V3, "[", fixed=TRUE), function(x) (x)[2])
 path2locmap$V3 <- gsub("]", "", path2locmap$V3)
@@ -132,89 +146,89 @@ for (cellName in colnames(pq)[1:100]){
   }
 }
 
-## Animation 3D pathway activity maps
-load('~/Downloads/tmp_coord.RObj')
-detach('package:GSVA', unload=TRUE)
-for (cellName in list.dirs(OUTD, full.names = F)){
-  print(cellName)
-  for(outTable in list.files(paste0(OUTD,filesep,cellName), pattern = ".txt", full.names = T )){
-    library(rgl)
-    library(magick)
-    outImage = gsub(".txt",".gif",outTable)
-    print(outImage)
-    if(!file.exists(outImage)){
-      pmap_ = read.table(file = outTable,sep="\t", header = T, check.names = F, stringsAsFactors = F)
+# ## Animation 3D pathway activity maps
+# load('~/Downloads/tmp_coord.RObj')
+# detach('package:GSVA', unload=TRUE)
+# for (cellName in list.dirs(OUTD, full.names = F)){
+#   print(cellName)
+#   for(outTable in list.files(paste0(OUTD,filesep,cellName), pattern = ".txt", full.names = T )){
+#     library(rgl)
+#     library(magick)
+#     outImage = gsub(".txt",".gif",outTable)
+#     print(outImage)
+#     if(!file.exists(outImage)){
+#       pmap_ = read.table(file = outTable,sep="\t", header = T, check.names = F, stringsAsFactors = F)
       
-      r3dDefaults$windowRect = c(0,0,700,700)
-      rgl::material3d(alpha = 0.1)
-      rgl::plot3d(x=pmap_$x, y=pmap_$y, z=pmap_$z,add=F, size=4.91, col=pmap_[,ncol(pmap_)], xlim=quantile(coord$x,c(0,1)), ylim=quantile(coord$y,c(0,1)), zlim=quantile(coord$z,c(0,1)), axes=F, xlab="",ylab="", zlab="", alpha=0.2)
-      Sys.sleep(5)
-      try(rgl::movie3d(
-        movie=matlab::fileparts(outImage)$name, 
-        rgl::spin3d( axis = c(1, 1, 1), rpm = 12),
-        duration = 4, 
-        dir = matlab::fileparts(outImage)$path,
-        type = "gif", 
-        clean = F
-      ))
-      rgl::rgl.close()
+#       r3dDefaults$windowRect = c(0,0,700,700)
+#       rgl::material3d(alpha = 0.1)
+#       rgl::plot3d(x=pmap_$x, y=pmap_$y, z=pmap_$z,add=F, size=4.91, col=pmap_[,ncol(pmap_)], xlim=quantile(coord$x,c(0,1)), ylim=quantile(coord$y,c(0,1)), zlim=quantile(coord$z,c(0,1)), axes=F, xlab="",ylab="", zlab="", alpha=0.2)
+#       Sys.sleep(5)
+#       try(rgl::movie3d(
+#         movie=matlab::fileparts(outImage)$name, 
+#         rgl::spin3d( axis = c(1, 1, 1), rpm = 12),
+#         duration = 4, 
+#         dir = matlab::fileparts(outImage)$path,
+#         type = "gif", 
+#         clean = F
+#       ))
+#       rgl::rgl.close()
       
-      ##################
-      #### clean up ####
-      ##################
-      detach('package:rgl', unload=TRUE)
-      library(crosstalk)
-      library(manipulateWidget)
-      library(miniUI)
-      library(shiny)
-      library(shinythemes)
-      detach('package:crosstalk', unload=TRUE)
-      detach('package:manipulateWidget', unload=TRUE)
-      detach('package:miniUI', unload=TRUE)
-      detach('package:shinythemes', unload=TRUE)
-      detach('package:shiny', unload=TRUE)
-      detach("package:magick", unload = TRUE)
-      ## Remove cache generated by magick package
-      f=list.files('/tmp/Rtmp2quoCU', pattern='magick', full.names=T); 
-      if(length(f)>50){
-        for (x in f){ 
-          file.remove(x)
-        }
-      }
-    }
-  }
-}
-
-
-
-
-# f=`ls`
-# for x in $f; do
-#   echo $x;
-#   tar -czvf $x.tar.gz $x;
-# done
-
-
-# # Finally we produce an image of the pathway map for testing:
-# library(matlab)
-# library(cloneid)
-# of = list.files(path = "~/Downloads", pattern = "pathwayCoordinatesStack_Clone",full.names = T)[4]
-# pmap2D = read.table(file=of, sep="\t", check.names = F, strip.white = F, header = T)
-# par(mfrow=c(2,2));
-# for(p in c("Mitotic Metaphase and Anaphase","Apoptosis","Metabolism","Mitochondrial protein import")){
-#   tmp=pmap2D[pmap2D$pathway==p,]
-#   pdf(paste0("~/Downloads/",p,".pdf"))
-#   image(as.matrix(tmp[,-1]),main=paste(p,cloneid::extractID(fileparts(of)$name)),col =rainbow(100))
+#       ##################
+#       #### clean up ####
+#       ##################
+#       detach('package:rgl', unload=TRUE)
+#       library(crosstalk)
+#       library(manipulateWidget)
+#       library(miniUI)
+#       library(shiny)
+#       library(shinythemes)
+#       detach('package:crosstalk', unload=TRUE)
+#       detach('package:manipulateWidget', unload=TRUE)
+#       detach('package:miniUI', unload=TRUE)
+#       detach('package:shinythemes', unload=TRUE)
+#       detach('package:shiny', unload=TRUE)
+#       detach("package:magick", unload = TRUE)
+#       ## Remove cache generated by magick package
+#       f=list.files('/tmp/Rtmp2quoCU', pattern='magick', full.names=T); 
+#       if(length(f)>50){
+#         for (x in f){ 
+#           file.remove(x)
+#         }
+#       }
+#     }
+#   }
 # }
-# dev.off()
 
 
-# # align VAE output inside compartment
-# coord_nucl = coord[coord$nucleus==1,]
-# ## Clone_0.0027047_ID107807
-# vae = read.csv(paste0(ROOTD,"RNAsequencing/A02_210128_VAEoutput/identities_latentSpace3D.csv"))
-# vae=vae[vae$Location=="nucleus",]
-# vae=vae[!duplicated(vae),]
-# scatterplot3d::scatterplot3d(vae$x, vae$y, vae$z, pch=20)
-# alignPathways2Compartments(coord_nucl[,c("x","y","z")], vae[,c("x","y","z")])
+
+
+# # f=`ls`
+# # for x in $f; do
+# #   echo $x;
+# #   tar -czvf $x.tar.gz $x;
+# # done
+
+
+# # # Finally we produce an image of the pathway map for testing:
+# # library(matlab)
+# # library(cloneid)
+# # of = list.files(path = "~/Downloads", pattern = "pathwayCoordinatesStack_Clone",full.names = T)[4]
+# # pmap2D = read.table(file=of, sep="\t", check.names = F, strip.white = F, header = T)
+# # par(mfrow=c(2,2));
+# # for(p in c("Mitotic Metaphase and Anaphase","Apoptosis","Metabolism","Mitochondrial protein import")){
+# #   tmp=pmap2D[pmap2D$pathway==p,]
+# #   pdf(paste0("~/Downloads/",p,".pdf"))
+# #   image(as.matrix(tmp[,-1]),main=paste(p,cloneid::extractID(fileparts(of)$name)),col =rainbow(100))
+# # }
+# # dev.off()
+
+
+# # # align VAE output inside compartment
+# # coord_nucl = coord[coord$nucleus==1,]
+# # ## Clone_0.0027047_ID107807
+# # vae = read.csv(paste0(ROOTD,"RNAsequencing/A02_210128_VAEoutput/identities_latentSpace3D.csv"))
+# # vae=vae[vae$Location=="nucleus",]
+# # vae=vae[!duplicated(vae),]
+# # scatterplot3d::scatterplot3d(vae$x, vae$y, vae$z, pch=20)
+# # alignPathways2Compartments(coord_nucl[,c("x","y","z")], vae[,c("x","y","z")])
 
