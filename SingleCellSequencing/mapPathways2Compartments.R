@@ -184,9 +184,17 @@ for (cellName in colnames(pq)[1:100]){
       print(paste("Skipping",j,"because image already saved"))
       next;
     }
-    P = path2locmap[path2locmap$pathwayname==j,,drop=F] #select the rows which have the pathway of interest  
+    P = path2locmap[path2locmap$pathwayname==j,,drop=F] #select the rows which have the pathway of interest 
+    #rename V8 to Species and keep only columns Location, pathwayname and Species
+    colnames(P)[8]="Species"
+    P = subset(P, select = c("Location", "pathwayname", "Species"))
+    #remove duplicate rows
+    P = P[!duplicated(P), ]
+
     fr =  plyr::count(P$Location)
-    fr$freq = fr$freq/sum(fr$freq) #what's this doing?
+    #if there are two locations we are dividing the freq by 2, 3 locations diving by 3
+    #to evenly distribute coordinates between compartments
+    fr$freq = fr$freq/sum(fr$freq) 
     rownames(fr) = fr$x
     
     ## Candidates of indices
