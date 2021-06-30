@@ -3,29 +3,27 @@
 # 1. Get compartment coordinates from allen cell segmentation - combine organelle coordinates together into coords
 # 2. Create a placeholder image
 # 3. Run cloneid on SNU-668 cell line to get subpopulations
-#       - How does cloneid work?
-#       - Where does SNU-668 come from?
+#       - CloneID is a database. Can learn more here: 10.1093/nargab/lqaa016
+#       - SNU-668 is contained within CloneID
 # 4. Move forward working with the 9th subpopulation, create a file and quantify pathway expression based on GSVA (pq)
 #       - where colnames are the 430 cells in the subpop
 #       - rownames gives 1116 pathways (I think from running cloneid?) 
-#       - what does getSubProfiles do? (copy number and expression profile of each cell?) 
-#       - GSVA compares to all cells or within cell/what was the expression originally 
+#       - getSubProfiles gets copy number and expression profile of each cell
+#       - GSVA compares to all cells and within cell: https://doi.org/10.1186/1471-2105-14-7
 # 5. Get the cell cycle State for each cell
 # 6. Create a pathtolocmap - take NCBI file and generalise to Allen cell compartments
+#       - we preprocessed the NCBI file from Reactome to ensure that locations are more standardised
+#       - TODO: get rid of duplicate pathways 
 # 7. From pathtolocmap create a list of unique pathway names - lpp (656 pathways)
-#       - why is this different from the 1116 pathways in the 9th subpopulation (pq)?
-# 8. For each cell in 9th subpop, for each pathway in lpp find how many times it appears in path2locmap
-#       - why do we divide by the no. of observations? 
+#       - This different from the 1116 pathways in the 9th subpopulation (pq) as we are only considering mito and nucleus 
+# 8. For each cell in 9th subpop, for each pathway in lpp find how many compartemnts it appears in in path2locmap
+#       - TODO: This is currently wrog need to remove duplicates.
+#       - We should be dividing by 2 if in 2 compartments, by 3 if 3 compartments (naive approach as not necessarily evenly distributed)
 # 9. Get indices which are in pathway location e.g. nucleus
 # 10. Sample the same number of coordinates as that pathways expression e.g. for RNA polymerase, expr=16096, sample 16096 coordinates
-#       - why same as pathway expression?
+#       - Same as pathway expression? We should explore alternatives to this to make visualisation easier.
 # 11. Because we allow resampling record how many times a coord has been sampled - append to the coord like table from allen cell
 # 12. Create an image using these Coordinates
-#       - most of my pngs are empty?
-#       - what does col=rainbow(100) mean? 
-#       - why do we end up with 40-ish pngs per cell? 
-
-# I think I still need to understand how GSVA works and the difference between the pathways from cloneid vs pathways from Reactome NCBI file.
 
 ### Script ###
 
