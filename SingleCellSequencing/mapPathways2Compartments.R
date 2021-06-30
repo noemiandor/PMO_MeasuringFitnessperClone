@@ -13,11 +13,9 @@
 # 5. Get the cell cycle State for each cell
 # 6. Create a pathtolocmap - take NCBI file and generalise to Allen cell compartments
 #       - we preprocessed the NCBI file from Reactome to ensure that locations are more standardised
-#       - TODO: get rid of duplicate pathways 
 # 7. From pathtolocmap create a list of unique pathway names - lpp (656 pathways)
 #       - This different from the 1116 pathways in the 9th subpopulation (pq) as we are only considering mito and nucleus 
 # 8. For each cell in 9th subpop, for each pathway in lpp find how many compartemnts it appears in in path2locmap
-#       - TODO: This is currently wrog need to remove duplicates.
 #       - We should be dividing by 2 if in 2 compartments, by 3 if 3 compartments (naive approach as not necessarily evenly distributed)
 # 9. Get indices which are in pathway location e.g. nucleus
 # 10. Sample the same number of coordinates as that pathways expression e.g. for RNA polymerase, expr=16096, sample 16096 coordinates
