@@ -1,3 +1,5 @@
+#https://blog.keras.io/building-autoencoders-in-keras.html
+
 from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Conv2DTranspose, concatenate, BatchNormalization, Activation
 from keras.models import Model
 from keras.preprocessing.image import ImageDataGenerator
@@ -12,33 +14,44 @@ from loadData import loadData
 from tensorflow import keras
 import tensorflow as tf
 import os
+from os.path import expanduser
 import pandas as pd
 
-#K.set_image_data_format('channels_first')
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
-#path2Images ='../Identity/ABC_transporter_disorders'
-#identity = 'ABC_transporter_disorders'
+current_directory = os.path.dirname(os.path.realpath(__file__))
+#path2Identities = os.path.join(current_directory, "../Identity")
+#going to hard code path to SNU-668 because I don't want it uploaded to google drive
+home = expanduser("~")
+path2Identities = home + "/smaller_test_imgs"
+
+
+#os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" #not sure what this is
+#os.environ["CUDA_VISIBLE_DEVICES"] = "5" 
+
+
 def create_layers():
     layers = []
     size = 32 
   
+    # Q: How do we decide the layers? Conv2D, padding, MaxPooling2D, Upsampling 
+
     #encoder layers
     for i in range(0, 3):
         x = Conv2D(size, (3, 3), activation='relu', padding='same')
         layers += [x] 
         x = MaxPooling2D((2, 2), padding='same')
         layers += [x]
-        size = size // 2
+        size = size // 2 #rounds to nearest whole number
   
 
-        #deocder layers 
+    #deocder layers 
     for i in range(0, 3):
+
         size = size * 2
         if i == 2:
             x = Conv2D(size, (3, 3), activation='relu')
         else:
             x = Conv2D(size, (3, 3), activation='relu', padding='same')
+
         layers += [x]
         x = UpSampling2D((2, 2))
         layers += [x]
@@ -49,13 +62,17 @@ def create_layers():
   
     return layers
 
+
+
 def getAutoencoder(c,w,h):
+
     input_img = Input(shape=(c, w, h))  
 
     layers = create_layers()
 
     #create the auto encoder network 
     x = input_img
+
     for layer in layers:
         x = layer(x)
     
@@ -64,6 +81,7 @@ def getAutoencoder(c,w,h):
   
     #create the encoder network
     x = input_img
+
     for layer in layers[0:6]:
         x = layer(x)
     
@@ -71,24 +89,35 @@ def getAutoencoder(c,w,h):
   
     #create the decoder network
     input_encoded = Input(shape = (4, 4, 8))
+    
     x = input_encoded
+
     for layer in layers[6:]:
         x = layer(x)
 
     decoder = Model(input_encoded, x)
+
     return autoencoder, encoder, decoder 
 
-class Sampling(layers.Layer):
+
+#I'm not sure what layers.Layer is here? 
+
+class Sampling(layers.Layer): 
     """Uses (z_mean, z_log_var) to sample z, the vector encoding a digit."""
 
     def call(self, inputs):
+        
         z_mean, z_log_var = inputs
         batch = tf.shape(z_mean)[0]
         dim = tf.shape(z_mean)[1]
         epsilon = tf.keras.backend.random_normal(shape=(batch, dim))
+        
         return z_mean + tf.exp(0.5 * z_log_var) * epsilon
 
+# How do you choose all these layers and strides?
+
 def VAE_encoder(w,h,c,latent_dim):
+
     #latent_dim = 2
     encoder_inputs = keras.Input(shape=(w, h, c))
     x = layers.Conv2D(32, 3, activation="relu", strides=2, padding="same")(encoder_inputs)
@@ -155,6 +184,7 @@ class VAE(keras.Model):
             "reconstruction_loss": self.reconstruction_loss_tracker.result(),
             "kl_loss": self.kl_loss_tracker.result(),
         }
+        
     def call(self, data):
         [z_mean,z_log_var,z]  = self.encoder(data)
         y_pred = self.decoder(z)
@@ -168,11 +198,12 @@ vae.compile(optimizer=keras.optimizers.Adam())
 # To train it, use the original MNIST digits with shape (samples, 3, 28, 28),
 # and just normalize pixel values between 0 and 1
 
-path2Identities = '../Identity'
+#path2Identities = '../Identity'
+#path2Identities = os.path.join(current_directory, "../Identity")
 Identities = os.listdir(path2Identities)
 for f,identity in enumerate(Identities):
     #print('item {}'.format(f))
-    if os.path.exists(os.path.join('../LatentSpaceVAE_3D',identity+'.pickle')):
+    if os.path.exists(os.path.join(current_directory, '../LatentSpaceVAE_3D',identity+'.pickle')):
         #print('item {} already exists'.format(f))    
         continue
 
@@ -182,7 +213,7 @@ for f,identity in enumerate(Identities):
         path2Images = os.path.join(path2Identities,identity) #'../Identity/ABC_transporter_disorders'
         #identity = 'ABC_transporter_disorders'
 
-        x_train,x_test = loadData(path2Images,300,300)
+        x_train,x_test = loadData(path2Identities,300,300)
 
         x_train = x_train.astype('float32') / 255.
         x_test = x_test.astype('float32') / 255.
@@ -220,7 +251,7 @@ for f,identity in enumerate(Identities):
     #vae.fit_generator(datagen.flow(x_train, x_train,batch_size=32), epochs=2)
     traingen = datagen.flow(x_train,batch_size=32)
     #print(traingen)
-    history = vae.fit(traingen, epochs=50, shuffle=True, validation_data= (x_test,x_test),callbacks=[ModelCheckpoint('../modelsVAE_3D/'+identity+'.h5', monitor='reconstruction_loss', verbose=1, save_best_only=True,save_weights_only=False)], verbose=2)
+    history = vae.fit(traingen, epochs=10, shuffle=True, validation_data= (x_test,x_test),callbacks=[ModelCheckpoint(os.path.join(current_directory,'../modelsVAE_3D/',identity+'.h5'), monitor='reconstruction_loss', verbose=1, save_best_only=True,save_weights_only=True)], verbose=2)
 
     # take a look at the reconstructed digits
     #decoded_imgs = vae.decoder.predict(x_test)
@@ -250,7 +281,7 @@ for f,identity in enumerate(Identities):
     z_mean, _, _ = vae.encoder.predict(x_test)
     print(z_mean.shape)
     
-    pickle.dump(z_mean, open('../LatentSpaceVAE_3D/'+identity+'.pickle', 'wb'))
+    pickle.dump(z_mean, open(os.path.join(current_directory, '../LatentSpaceVAE_3D/', identity+'.pickle'), 'wb'))
     '''
     n = 10
     plt.figure(figsize=(10, 4), dpi=100)
