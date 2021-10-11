@@ -1,0 +1,28 @@
+{
+  "batch_size": 16,
+  "bpds_kwargs": {
+    "buffer_size": 16,
+    "buffer_switch_interval": 2800,
+    "patch_shape": [
+      32,
+      64,
+      64
+    ]
+  },
+    "dataset": "fnet.data.MultiChTiffDataset",
+    "dataset_kwargs": {
+        "path_csv": "/ihome/zsiddiqu/singhp/N_test.csv"
+    },
+    "gpu_ids": 0,
+    "idx_sel": null,
+    "metric": "fnet.metrics.corr_coef",
+    "n_images": -1,
+    "no_prediction": false,
+    "no_signal": false,
+    "no_target": false,
+    "path_model_dir": [
+        "/ihome/zsiddiqu/singhp/model/model.p"
+    ],
+    "path_save_dir": "predictions",
+    "path_tif": null
+}
