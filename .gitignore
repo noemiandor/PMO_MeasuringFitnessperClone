@@ -3,3 +3,8 @@
 .RData
 .Rhistory
 renv/
+
+# Python
+
+Cell_Cycle/I05_multiOrganelles_Linked/
+Cell_Cycle/__pycache__/
