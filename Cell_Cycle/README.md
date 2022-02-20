@@ -7,7 +7,7 @@ Located at the same level as "Classes.py" and "examples.ipynb"
 
 "examples.ipynb" calls classes from "Classes.py"
 
-"Images_Classes.py" provides comments covering how each function works
+"Classes.py" provides comments covering how each function works
 
 "{}_testing_ground.ipynb" should be ignored - I will continue to develop in there and improve "Classes" as necessary
 
