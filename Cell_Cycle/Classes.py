@@ -194,7 +194,7 @@ class Check_Segmentation():
         fig.update_layout(scene_aspectmode='data')
         fig.show()
     
-    def plot_organelles_as_convex_hull(self):
+    def plot_organelles_as_convex_hull(self, by_cell=False):
 
         '''
         Returns interactive 3D plot of all organelles specified in subset. 
@@ -221,8 +221,13 @@ class Check_Segmentation():
             # subset columns for each organelle
             xyzl = coord_dict[key][["y", "x", "z", "label"]]
 
+            if by_cell==True: 
+                colour_list = range(0, int(max(xyzl["label"])))
+            else:
+                colour_list = [c] * int(max(xyzl["label"]))
+
             # iterate through organelle for each cell 
-            for i in xyzl["label"].unique():
+            for i, c in zip(xyzl["label"].unique(), colour_list):
                 
                 #subset and convert from panda to numpy for convex hull
                 xyz_la = xyzl[xyzl["label"]==i]
