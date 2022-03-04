@@ -110,7 +110,7 @@ class Check_Segmentation():
             cy = []
 
             for filename in cyto_files:
-                splitter = '{}cytoplasm.p_cell_|_coordinates.csv'.format(self.dir_path)
+                splitter = '{}cytoplasm.t_cell_|_coordinates.csv'.format(self.dir_path)
                 labels = re.split(splitter, filename)
                 df = pd.read_csv(filename, header=0)
                 df["label"] = int(labels[1])
@@ -275,11 +275,7 @@ class Check_Segmentation():
 
         if save == False:
             # ensures x, y, z axes are on the same scale
-            fig.update_layout(scene = dict(
-                                xaxis = dict(nticks=10, range = [0, 100],),
-                                yaxis = dict(nticks=10, range = [0, 100],),
-                                zaxis = dict(nticks=10, range = [0, 100],)
-            ))
+            fig.update_layout(scene_aspectmode="data")
             fig.show()
 
         if save == True:
@@ -287,9 +283,9 @@ class Check_Segmentation():
                 os.mkdir("3D_scatter_images")
             # ensures x, y, z axes are on the same scale
             fig.update_layout(scene = dict(
-                                xaxis = dict(nticks=10, range = [0, 100],),
-                                yaxis = dict(nticks=10, range = [0, 100],),
-                                zaxis = dict(nticks=10, range = [0, 100],),
+                                xaxis = dict(nticks=10, range = [0, 200],),
+                                yaxis = dict(nticks=10, range = [0, 200],),
+                                zaxis = dict(nticks=10, range = [0, 200],),
                                 
             ),
             height = 600, 
@@ -445,10 +441,10 @@ class Slice_Maker(Check_Segmentation):
                     #append empty arrays before we get to starting z slice
                     if i < z_start:
                         # initialise an empty array of 0s for each slice
-                        image_base = np.zeros((100, 100))
+                        image_base = np.zeros((self.image_size, self.image_size))
                     else:
                         # initialise an empty array of 0s for each slice
-                        image_base = np.zeros((100, 100))
+                        image_base = np.zeros((self.image_size, self.image_size))
                         # now iterate through each row of coordinates that contains that z value 
                         # remember we subsetted by cell label earlier 
                         for row in range(0, len(ex_nuc["z"])-1): 
@@ -601,9 +597,9 @@ class Slice_Maker(Check_Segmentation):
         ax.set_ylabel("y-axis")
         ax.set_zlabel("z-axis")
 
-        ax.set_xlim(0, 100)  # a = 6 (times two for 2nd ellipsoid)
-        ax.set_ylim(0, 100)  # b = 10
-        ax.set_zlim(0, 100)  # c = 16
+        ax.set_xlim(0, self.image_size)  # a = 6 (times two for 2nd ellipsoid)
+        ax.set_ylim(0, self.image_size)  # b = 10
+        ax.set_zlim(0, self.image_size)  # c = 16
 
         if save == False:
             plt.ion()
