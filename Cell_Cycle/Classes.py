@@ -94,7 +94,7 @@ class Check_Segmentation():
             for filename in nuclei_files:
                 splitter = '{}nucleus.p_cell_|_coordinates.csv'.format(self.dir_path)
                 labels = re.split(splitter, filename)
-                df = pd.read_csv(filename, index_col=0, header=0)
+                df = pd.read_csv(filename, header=0)
                 df["label"] = int(labels[1])
                 nu.append(df)
 
