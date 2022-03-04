@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import os
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from skimage import measure
+import selenium
 
 # opens plotly in browser
 import plotly.express as px
@@ -20,9 +21,13 @@ pio.renderers.default = "browser"
 
 #umap
 import umap
+from umap import *
 from bokeh.plotting import figure, show, output_notebook
 from bokeh.models import HoverTool, ColumnDataSource, CategoricalColorMapper
 from bokeh.palettes import Spectral10
+from bokeh.io import export_svg
+from bokeh.resources import CDN
+from bokeh.embed import file_html
 
 output_notebook()
 
@@ -139,6 +144,76 @@ class Check_Segmentation():
         
         # subsetted dictionary, keys are organelles, values are dataframe of subset of cells
         return coord_dict
+    
+    def subset_and_scale_individual(self, number=None):
+
+        '''
+        individual subset
+
+        :param number: list, individual cell label
+        '''
+
+        # get dictionary of all cells
+        coord_dict = self.get_coordinates()
+
+        '''
+        maxx_l = []
+        minx_l = []
+        maxy_l = []
+        miny_l = []
+        maxz_l = []
+
+        for key in coord_dict:
+            frame = coord_dict[key]
+            maxx_l.append(max(frame["x"]))
+            minx_l.append(min(frame["x"]))
+            maxy_l.append(max(frame["y"]))
+            miny_l.append(min(frame["y"]))
+            maxz_l.append(max(frame["z"]))
+        
+        maxx = max(maxx_l) + 10
+        minx = min(minx_l) -10
+        maxy = max(maxy_l) +10
+        miny = min(miny_l) -10
+        maxz = max(maxz_l) +10
+        '''
+
+        # iterate through organelle (key) in dictionary
+        all_frame_l = []
+        for key in coord_dict:
+            frame = coord_dict[key]
+            s_frame = frame.loc[frame['label'].isin(number)]
+            coord_dict[key] = s_frame
+            all_frame_l.append(s_frame)
+        
+        all_frame = pd.concat(all_frame_l)
+
+        # min x and min y value in point cloud
+        # this allows organelle to occupy center of slice
+        minx = np.min(all_frame["x"])
+        miny = np.min(all_frame["y"])
+
+        # convert point cloud to the new coordinate system x=0-100, y=0-100
+        # for example if your organelle originally had a min x value of 801 and a max x value of 824
+        # this would need to be converted to a value between 0-100
+        x_padding = (self.image_size - (np.max(all_frame["x"]) - np.min(all_frame["x"])))/2
+        y_padding = (self.image_size - (np.max(all_frame["y"]) - np.min(all_frame["y"])))/2
+        x_left = ceil(x_padding)
+        y_left = ceil(y_padding)
+
+        # iterate through organelle (key) in dictionary
+        
+        for key in coord_dict:
+            frame = coord_dict[key]
+            s_frame = frame.loc[frame['label'].isin(number)]
+
+            s_frame["y"] = s_frame["y"] - miny + y_left
+            s_frame["x"] = s_frame["x"] - minx + x_left
+
+            coord_dict[key] = s_frame
+                    
+        # subsetted dictionary, keys are organelles, values are dataframe of subset of cells
+        return coord_dict
 
     def flag_clusters(self):
         '''
@@ -150,10 +225,10 @@ class Check_Segmentation():
         pass
 
     
-    def plot_organelles_as_scatter(self):
+    def plot_organelles_as_scatter(self, individual=False, save=False):
         
         '''
-        Returns interactive 3D plot of all organelles specified in subset. 
+        Returns interactive 3D plot of all organelles specified in cell. 
         Plots every point in point cloud (3D scatter plot).
         If only one organelle is specified: each cell is assigned a different colour.
         If more than 1 organelle is specified: each organelle is assigned a different colour.
@@ -163,9 +238,17 @@ class Check_Segmentation():
         Convex hull works but visualisation isn't very informative. 
         The best option currently is to subset cells. 
         '''
+        if individual is not False:
+            coord_dict = self.subset_and_scale_individual([individual])
+            # scale individual
+            all_subset = self.subset_coordinates()
+
+        else:    
+            # dictionary
+            coord_dict = self.subset_coordinates()
         
-        # dictionary
-        coord_dict = self.subset_coordinates()
+
+
 
         # initialise figure
         fig = go.Figure()
@@ -190,9 +273,39 @@ class Check_Segmentation():
                 )
             fig.add_trace(trace)
 
-        # ensures x, y, z axes are on the same scale
-        fig.update_layout(scene_aspectmode='data')
-        fig.show()
+        if save == False:
+            # ensures x, y, z axes are on the same scale
+            fig.update_layout(scene = dict(
+                                xaxis = dict(nticks=10, range = [0, 100],),
+                                yaxis = dict(nticks=10, range = [0, 100],),
+                                zaxis = dict(nticks=10, range = [0, 100],)
+            ))
+            fig.show()
+
+        if save == True:
+            if not os.path.exists("3D_scatter_images"):
+                os.mkdir("3D_scatter_images")
+            # ensures x, y, z axes are on the same scale
+            fig.update_layout(scene = dict(
+                                xaxis = dict(nticks=10, range = [0, 100],),
+                                yaxis = dict(nticks=10, range = [0, 100],),
+                                zaxis = dict(nticks=10, range = [0, 100],),
+                                
+            ),
+            height = 600, 
+            width = 600
+            )
+
+            path = "3D_scatter_images/"+str(individual)
+            if self.mito == True:
+                path = path + "_mito"
+            if self.nuclei == True:
+                path = path + "_nuclei"
+            if self.cyto == True:
+                path = path + "_cyto"
+
+            fig.write_image(path+".png")
+        
     
     def plot_organelles_as_convex_hull(self):
 
@@ -240,7 +353,7 @@ class Check_Segmentation():
                                         alphahull=0))
         
         fig.update_layout(scene_aspectmode='data')
-        fig.show() 
+        fig.show()
 
 class Slice_Maker(Check_Segmentation):
 
@@ -257,7 +370,7 @@ class Slice_Maker(Check_Segmentation):
         :param cyto: boolean
         :param subset: list/command to make list/None, references which cells are to be plotted, examples include "range(1, 3), [1, 2, 10] or None" if no subset required and you want to plot all cells
         :param image_size: int, each slice will be a square matrix with length image_size
-        
+        :param number: int, label of 
         '''
     
         self.image_size = image_size
@@ -447,8 +560,7 @@ class Slice_Maker(Check_Segmentation):
         '''
         Plot 3D mesh of organelles of one cell
 
-        :param x: int, numerical label of one cell 
-        :param save: boolean, if True will save images to "3D_images/" - this is required for interactive umap  
+        :param x: int, numerical label of one cell   
         '''
 
         coord_dict = self.slice_images()
@@ -497,7 +609,15 @@ class Slice_Maker(Check_Segmentation):
             if not os.path.isdir("3D_images"):
                 os.mkdir("3D_images")
             plt.tight_layout()
-            plt.savefig("3D_images/"+str(x)+".png")
+            path = "3D_images/"+str(x)
+            if self.mito == True:
+                path = path + "_mito"
+            if self.nuclei == True:
+                path = path + "_nuclei"
+            if self.cyto == True:
+                path = path + "_cyto"
+            
+            plt.savefig(path+".png")
             plt.close(fig)
 
 
@@ -507,33 +627,7 @@ class UMAP_Maker(Slice_Maker):
     
         self.nearest_neighbours = nearest_neighbours
     
-    '''
-        Class which inherits from Slice_Maker. 
-        UMAP requires images to be loaded as unravelled image stacks.
-
-        :param dir_path: str, path to directory of cell segmentations
-        :param mito: boolean
-        :param nuclei: boolean
-        :param cyto: boolean
-        :param subset: list/command to make list/None, references which cells are to be plotted, examples include "range(1, 3), [1, 2, 10] or None" if no subset required and you want to plot all cells
-        :param image_size: int, each slice will be a square matrix with length image_size
-        :param nearest_neighbour: int, number of nearest neighbours for UMAP
-
-        '''
-    
-    
-    
     def unravel_slices(self):
-
-        '''
-        Stack of slices unravelled to 1D.
-        
-        CAUTION: Organelles are still labelled as different numbers. 
-        The functionality to choose if they should be represented as the same or different numbers
-        could be added in future.
-        
-        :return coord_dict: dict, keys are numerical labels of cells, values unravelled joined image set of all organelles 
-        '''
 
         # currently organelles have different values - could easily make them the same if I wanted
         # that can be added functionality
@@ -553,14 +647,6 @@ class UMAP_Maker(Slice_Maker):
         return coord_dict
 
     def unify_ravel(self):
-
-        '''
-        Make all unravelled image sets the same length by padding with 0.0.
-        Length is specified by the longest unravelled cell in set.
-        This is required for umap creation.
-
-        :return coord: dict, keys are cell numerical labels, values are unravelled image sets, each value the same length
-        '''
         
         coord = self.unravel_slices()
 
@@ -577,13 +663,6 @@ class UMAP_Maker(Slice_Maker):
         return coord
     
     def create_umap_data(self):
-
-        '''
-        Create umap embedding.
-        Nearest neighbours are specified when initialising classes
-
-        :return embedding: tuple, 2D array of embedding coords, list of labels
-        '''
         
         coord = self.unify_ravel()
         
@@ -599,12 +678,6 @@ class UMAP_Maker(Slice_Maker):
 
     def plot_simple_umap(self):
 
-        '''
-        Plot umap without corresponding visualisations.
-        Nearest neighbours are specified when initialising classes.
-
-        '''
-
         embedding, subset = self.create_umap_data()
 
         fig, ax = plt.subplots(1, figsize=(14, 10))
@@ -613,33 +686,33 @@ class UMAP_Maker(Slice_Maker):
     
         
     def embeddable_image(self, label):
-        '''
-        Convert saved images of 3D visualisations to embeddable format.
-        Use in interactive umap.
+        path = "3D_scatter_images/"+str(label)
+        if self.mito == True:
+            path = path + "_mito"
+        if self.nuclei == True:
+            path = path + "_nuclei"
+        if self.cyto == True:
+            path = path + "_cyto"
 
-        '''
-        image = Image.open("3D_images/"+str(label)+".png")
+        image = Image.open(path +".png")
         buffer = BytesIO()
         image.save(buffer, format='png')
         for_encoding = buffer.getvalue()
         return 'data:image/png;base64,' + base64.b64encode(for_encoding).decode()
     
     
-    def plot_interactive_umap(self, create_images=False):
-        '''
-        Create interactive umap embedding.
-        Each point reveals corresponding 3D visaulisation of data it was created from.
-        NB, data is actually fed in from slice data - not 3D visualisation.
-        Nearest neighbours are specified when initialising classes
-
-        :param create_images: boolean, if True will call plot_organelles_as_marching_cubes(), save to 3D_images
-        '''
+    def plot_interactive_umap(self, create_images=False, plot_scatter=False):
 
         embedding, subset = self.create_umap_data()
 
-        if create_images == True:
-            for num in subset:
-                self.plot_organelle_as_marching_cubes(num, save=True)
+        if plot_scatter == True:
+            if create_images == True:
+                for num in subset:
+                    self.plot_organelles_as_scatter(num, save=True)
+        else:
+            if create_images == True:
+                for num in subset:
+                    self.plot_organelles_as_marching_cubes(num, save=True)
         
         df = pd.DataFrame(embedding, columns=('x', 'y'))
         # digits_df['digit'] = [str(x) for x in digits.target]
@@ -676,7 +749,6 @@ class UMAP_Maker(Slice_Maker):
             size=4
         )
         show(plot_figure)
-
 
 '''
 if __name__ == "__main__":
