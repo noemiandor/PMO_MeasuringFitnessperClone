@@ -6,10 +6,12 @@ source("assignCompartment2Nucleus.R")
 source("compareCells.R")
 source("generateImageMask.R")
 source("Utils.R")
+source("visualizeSingleCells.R")
 eps=read.table('../dbscan/eps.txt')
 library(abind)
 library(matlab)
 library(rgl)
+library(ijtiff)
 library(geometry)
 library(flexclust)
 devtools::source_url("https://github.com/noemiandor/Utils/blob/master/grpstats.R?raw=TRUE")
@@ -17,8 +19,8 @@ devtools::source_url("https://github.com/noemiandor/Utils/blob/master/grpstats.R
 
 ## Constants, Settings, Input and output folders:
 # ROOT="/raid/crdlab/ix1/Projects/M005_MeasuringFitnessPerClone_2019/data/GastricCancerCLs/3Dbrightfield/NCI-N87"
-ROOT="~/Projects/PMO/MeasuringFitnessPerClone/data/GastricCancerCL/3Dbrightfield/NCI-N87"
-# ROOT="~/Projects/PMO/MeasuringFitnessPerClone/data/GastricCancerCL/3Dbrightfield/SUM-159"
+ROOT="~/Projects/PMO/MeasuringFitnessPerClone/data/GastricCancerCLs/3Dbrightfield/NCI-N87"
+# ROOT="~/Projects/PMO/MeasuringFitnessPerClone/data/GastricCancerCLs/3Dbrightfield/SUM-159"
 setwd(ROOT)
 EPS=10; #6
 MINPTS=3; #4
@@ -73,8 +75,9 @@ readOrganelleCoordinates<-function(signals_per_id, signals, IN){
 # FoFs=paste0("FoF",1:5,"007_220523_brightfield")
 # FoFs=paste0("FoF",1:5,"001_220721_brightfield")
 # FoFs=list.files(INDIR, pattern="001003_221018_brightfield")
-FoFs=list.files(INDIR, pattern="001005_221018_brightfield")
-# FoFs=list.files(INDIR, pattern="002005_221018_brightfield")
+# FoFs=list.files(INDIR, pattern="001005_221018_brightfield")
+FoFs=list.files(INDIR, pattern="002005_221018_brightfield")
+# FoFs=c(list.files(INDIR, pattern="FoF20020"), list.files(INDIR, pattern="FoF40020")); FoFs=grep("221018_brightfield",FoFs, value = T)
 signals=list(nucleus.p="nucleus.p_Cells_Centers.csv",mito.p="mito.p_Cells_Centers.csv")
 # signals=list(nucleus.p="nucleus.p_Cells_Centers.csv"); #nucleus.t="nucleus.t_Cells_Centers.csv",
 # signals=list(nucleus.t="nucleus.t_Cells_Centers.csv"); 
@@ -84,32 +87,38 @@ rawimges <- images <- list()
 ncells=list()
 for(FoF in FoFs){
   print(FoF)
-  unlink(paste0(OUTCORRECTED,filesep,FoF),recursive=T)
-  
-  ###############################################
-  ###### Correcting Cellpose Segmentation #######
-  ###############################################
-  ## For linking organelles:
-  CorrectCellposeSegmentation(FoF,signal=names(signals)[1],INDIR,OUTCORRECTED,doplot=0,eps=EPS,minPts=MINPTS,IMPORTALLORGANELLES=T)
-  ncells[[FoF]]= length(list.files(paste0(OUTCORRECTED,filesep,FoF,filesep,"All_Cells_coordinates"),pattern = "nucleus"))
-  ## For live-cell tracking:
-  # # CorrectCellposeSegmentation(FoF,signal=names(signals),INDIR,OUTCORRECTED,doplot=F,eps=EPS,minPts=MINPTS,IMPORTALLORGANELLES=F)
-  # # rgl.snapshot("~/Downloads/Brightfield_Timeseries.png")
-  images[[FoF]]=generateImageMask(FoF, INDIR=OUTCORRECTED, OUTDIR=OUTCORRECTED,root = ROOT, xydim = xydim)
-  # img=bioimagetools::readTIF(paste0(INDIR,filesep,FoF,filesep,names(signals),".tif"))
-  # img=img[fliplr(1:nrow(img)),,1:dim(images[[FoF]])[3]]
-  # img=EBImage::rotate(img,-90)
-  # rawimges[[FoF]]=resize4Ilastik(img, xydim = xydim)
-  
-  
-  ## Next link each predicted nucleus to its closest target nucleus
-  OUTLINKED_=paste0(getwd(),filesep,OUTLINKED,filesep,FoF,filesep)
-  unlink(OUTLINKED_,recursive=T)
-  setwd(paste0(OUTCORRECTED,filesep,FoF,filesep,"Cells_center_coordinates"))
-  # assignCompartment2Nucleus(signals$nucleus.p, signals$nucleus.t, OUTLINKED_)
-  assignCompartment2Nucleus(signals$mito.p, signals$nucleus.p, OUTLINKED_, save_cell_gif=T)
   setwd(ROOT)
+  # unlink(paste0(OUTCORRECTED,filesep,FoF),recursive=T)
+  # 
+  # ###############################################
+  # ###### Correcting Cellpose Segmentation #######
+  # ###############################################
+  # ## For linking organelles:
+  # CorrectCellposeSegmentation(FoF,signal=names(signals)[1],INDIR,OUTCORRECTED,doplot=0,eps=EPS,minPts=MINPTS,IMPORTALLORGANELLES=T)
+  # ncells[[FoF]]= length(list.files(paste0(OUTCORRECTED,filesep,FoF,filesep,"All_Cells_coordinates"),pattern = "nucleus"))
+  # ## For live-cell tracking:
+  # # # CorrectCellposeSegmentation(FoF,signal=names(signals),INDIR,OUTCORRECTED,doplot=F,eps=EPS,minPts=MINPTS,IMPORTALLORGANELLES=F)
+  # # # rgl.snapshot("~/Downloads/Brightfield_Timeseries.png")
+  # # images[[FoF]]=generateImageMask(FoF, INDIR=OUTCORRECTED, OUTDIR=OUTCORRECTED,root = ROOT, xydim = xydim)
+  # images[[FoF]]=try(generateImageMask(FoF, INDIR=OUTCORRECTED, OUTDIR=OUTCORRECTED,root = ROOT, signal = "nucleus.p"))
+  # # img=bioimagetools::readTIF(paste0(INDIR,filesep,FoF,filesep,names(signals),".tif"))
+  # # img=img[fliplr(1:nrow(img)),,1:dim(images[[FoF]])[3]]
+  # # img=EBImage::rotate(img,-90)
+  # # rawimges[[FoF]]=resize4Ilastik(img, xydim = xydim)
+  # 
+  # 
+  # ## Next link each predicted nucleus to its closest target nucleus
+  OUTLINKED_=paste0(getwd(),filesep,OUTLINKED,filesep,FoF,filesep)
+  # unlink(OUTLINKED_,recursive=T)
+  # setwd(paste0(OUTCORRECTED,filesep,FoF,filesep,"Cells_center_coordinates"))
+  # # # assignCompartment2Nucleus(signals$nucleus.p, signals$nucleus.t, OUTLINKED_)
+  # assignCompartment2Nucleus(signals$mito.p, signals$nucleus.p, OUTLINKED_, save_cell_gif=T)
+  # setwd(ROOT)
   
+  ## Visualize cells
+  cells=unique(sapply(strsplit(list.files(OUTLINKED_,pattern = "nucleus.p"),"_"),"[[",3))
+  tmp=sapply(cells, function(i) visualizeSingleCells(i, signals$mito.p, signals$nucleus.p, OUTLINKED_))
+   
   # ## Compare each predicted to its linked target nucleus
   # stats[[FoF]]=compareCells(signals$nucleus.t, signals$nucleus.p, OUTLINKED_)
 }
@@ -380,7 +389,7 @@ library(patchwork)
 Y=list()
 for(COI in c("zslices_nucleus.t","vol_nucleus.t")){
   FoF="FoF12_211110_fluorescent.nucleus"
-  setwd("~/Projects/PMO/MeasuringFitnessPerClone/data/GastricCancerCL/3Dbrightfield/NCI-N87/D06_Stats")
+  setwd("~/Projects/PMO/MeasuringFitnessPerClone/data/GastricCancerCLs/3Dbrightfield/NCI-N87/D06_Stats")
   f=list.files()
   X=lapply(f, function(x) read.csv(paste0(x,filesep,FoF,"_stats.csv")))
   X_=sapply(X, function(x) x[x[,COI]>0, COI])

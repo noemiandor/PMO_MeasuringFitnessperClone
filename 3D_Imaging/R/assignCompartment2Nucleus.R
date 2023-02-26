@@ -69,33 +69,7 @@ assignCompartment2Nucleus<-function(other_center_coord, nuc_center_coord,OUTD, s
     
     ##Visualize cell
     if(save_cell_gif){
-      a=read.csv(f_nuc,header=T)
-      a$what="nucleus"
-      dm$what="mito"
-      dm=rbind(a[,c("x","y","z","what")],dm[,c("x","y","z","what")])
-      dm[,c("x","y")] = round(dm[,c("x","y")] * pixelsize_xy)
-      dm$z = round(dm$z * z_interval)
-      dm$x=1+dm$x-min(dm$x)
-      dm$y=1+dm$y-min(dm$y)
-      dm$z=1+dm$z-min(dm$z)
-      a=dm[dm$what=="nucleus",]
-      b=dm[dm$what=="mito",]
-      ## Lims
-      xlim<-ylim<- ceil(c(0,110)*pixelsize_xy)
-      zlim=ceil(c(0,70)*z_interval)
-      b$x[b$x>xlim[2]]=xlim[2]
-      b$y[b$y>ylim[2]]=ylim[2]
-      ##Save plot
-      hull=try(Plot_ConcaveHull(a$x, a$y, a$z, lcolor =1, alpha=0.15,add = F,xlim=xlim,ylim=ylim,zlim=zlim, other=b[,c("x","y","z")], png=paste0(OUTD,filesep,"cell_",i,".png")))
-      if(class(hull)=="try-error"){
-        next;
-      }
-      # rgl::movie3d(movie=paste0("cell_",i),
-      #              rgl::spin3d( axis = c(1, 0, 1), rpm = 8),
-      #              duration = 4, dir = OUTD, type = "gif", clean = TRUE)
-      # rgl::close3d()
-      saveRDS(hull$nucleus, paste0(OUTD,filesep,"nucleus_",i,".rds")); ## write 3D array
-      saveRDS(hull$other, paste0(OUTD,filesep,"mito_",i,".rds")); ## write 3D array
+      visualizeSingleCells(i, other_center_coord, nuc_center_coord,OUTD)
     }
   }
   
