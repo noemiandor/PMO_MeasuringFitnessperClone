@@ -102,9 +102,14 @@ ii=which(colnames(fucci) %in% toupper(xyz))
 colnames(fucci)[ii]=tolower(colnames(fucci)[ii])
 ## Plot fucci classes
 # par(mfrow=c(2,2))
+fucci$cellCycle[fucci$cellCycle=="G2M"] = 4
+fucci$cellCycle[fucci$cellCycle=="S"] = 3
+fucci$cellCycle[fucci$cellCycle=="G1S"] = 2
+fucci$cellCycle[fucci$cellCycle=="G1"] = 1   
+fucci$cellCycle=as.numeric(fucci$cellCycle)         
 fuccicol=fliplr(rainbow(max(fucci$cellCycle)*1.2)[1:max(fucci$cellCycle)])
 names(fuccicol) = c("G1", "G1/S","S","G2/M")
-plot(fucci$Intensity_IntegratedIntensity_green, fucci$Intensity_IntegratedIntensity_red, col=fucci$cellCycle, pch=20, log="xy", xlab="Intensity_IntegratedIntensity_green", ylab="Intensity_IntegratedIntensity_red", cex.lab=2, cex.axis=2, main=REGEX)
+plot(fucci$Intensity_MeanIntensity_green, fucci$Intensity_MeanIntensity_red, col=fucci$cellCycle, pch=20, log="xy", xlab="Intensity_IntegratedIntensity_green", ylab="Intensity_IntegratedIntensity_red", cex.lab=2, cex.axis=2, main=REGEX)
 legend("bottomright", names(fuccicol), fill=1:4)
 plyr::count(fucci$cellCycle)
 ## Save output for gating
