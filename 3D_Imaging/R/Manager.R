@@ -35,8 +35,8 @@ xyz=c("x","y","z")
 # r3dDefaults$windowRect=c(0,50, 1600, 800) 
 r3dDefaults$windowRect=c(0,50, 500,500)
 INDIR="A04_CellposeOutput"
-OUTCORRECTED="A05_PostProcessCellposeOutput"
-dirCreate(OUTCORRECTED, permission = "a+w")
+#OUTCORRECTED="A05_PostProcessCellposeOutput"
+#dirCreate(OUTCORRECTED, permission = "a+w")
 # ILASTIKINPUT="G06_IlastikInput"
 # dirCreate(ILASTIKINPUT, permission = "a+w")
 OUTLINKED="A06_multiSignals_Linked"
@@ -142,14 +142,14 @@ ncells=list()
 for(FoF in FoFs){
   print(FoF)
   setwd(ROOT)
-  unlink(paste0(OUTCORRECTED,filesep,FoF),recursive=T)
+  #unlink(paste0(OUTCORRECTED,filesep,FoF),recursive=T)
   
   ###############################################
   ###### Correcting Cellpose Segmentation #######
   ###############################################
-  CorrectCellposeSegmentation(FoF,signal=names(signals)[1],INDIR,OUTCORRECTED,doplot=0,eps=EPS,minPts=MINPTS,IMPORTALLORGANELLES=F)
+  #CorrectCellposeSegmentation(FoF,signal=names(signals)[1],INDIR,OUTCORRECTED,doplot=0,eps=EPS,minPts=MINPTS,IMPORTALLORGANELLES=F) Removed for CellPoseSAM
   #OUTLINKED_=paste0(getwd(),filesep,OUTCORRECTED,filesep,FoF,filesep,"All_Cells_coordinates")
-  ncells[[FoF]]= length(list.files(paste0(OUTCORRECTED,filesep,FoF,filesep,"All_Cells_coordinates"),pattern = "nucleus"))
+  #ncells[[FoF]]= length(list.files(paste0(OUTCORRECTED,filesep,FoF,filesep,"All_Cells_coordinates"),pattern = "nucleus"))
   # # ## For live-cell tracking:
   # # # # CorrectCellposeSegmentation(FoF,signal=names(signals),INDIR,OUTCORRECTED,doplot=F,eps=EPS,minPts=MINPTS,IMPORTALLORGANELLES=F)
   # # # # rgl.snapshot("~/Downloads/Brightfield_Timeseries.png")
@@ -174,7 +174,7 @@ for(FoF in FoFs){
   setwd(ROOT)
   OUTLINKED_=paste0(getwd(),filesep,OUTLINKED,filesep,FoF,filesep)
   unlink(OUTLINKED_,recursive=T)
-  setwd(paste0(OUTCORRECTED,filesep,FoF,filesep,"Cells_center_coordinates"))
+  setwd(paste0(INDIR,filesep,FoF,filesep,"Cells_center_coordinates"))
   # # # assignCompartment2Nucleus(signals$nucleus.p, signals$nucleus.t, OUTLINKED_)
   # assignCompartment2Nucleus(signals$mito.p, signals$nucleus.p, OUTLINKED_, save_cell_gif=F)
   # assignCompartment2Nucleus(signals$cytoplasm.p, signals$nucleus.p, OUTLINKED_, save_cell_gif=F)
@@ -215,6 +215,10 @@ for(FoF in FoFs){
     ## Save output -- overwrite
     write.csv(coord, file=x,quote = F,row.names = F)
   }
+  
+  print("Cell cycle representation:")
+  print(plyr::count(fucci_[!is.na(fucci_$ID),'cellCycle']))
+  
   fucci_=fucci_[!is.na(fucci_$ID),]
   rownames(fucci_)=fucci_$ID
   write.table(fucci_, file=paste0(OUTLINKED_,filesep,FoF,"_fucci.txt"), quote = F,row.names = F, sep="\t")
