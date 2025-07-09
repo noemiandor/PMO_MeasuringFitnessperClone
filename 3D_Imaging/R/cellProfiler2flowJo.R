@@ -48,7 +48,7 @@ data_ff <- flowFrame(as.matrix(fucci_), parameters = AnnotatedDataFrame(metadata
 
 write.FCS(data_ff, paste0("~/Downloads/",fileparts(getwd())$name,".nucleus_fucci.fcs"))
 # Ananlyze in Flow Jo --> export settings:
-# select population --> export populations --> Concatenate tab --> format = csv scale values; include header: checked; Parameter: checked
+# select population (G1, S, G2M, G1S) --> export populations --> Concatenate tab --> format = csv scale values; include header: checked; Parameter: checked
 
 plot(fucci_$Intensity_MeanIntensity_green,fucci_$Intensity_MeanIntensity_red, log='xy', pch=20)
 
@@ -74,5 +74,39 @@ legend("topright",names(col),fill=col)
 fr=plyr::count(fucci$cellCycle)
 fr$freq=fr$freq/sum(fr$freq)
 write.csv(fucci,file = "object_cellCycle.csv",row.names = F, quote = F)
+
+
+## check coordinates and cell cycle distributions are correct:
+setwd("~/Projects/PMO/MeasuringFitnessPerClone/data/GastricCancerCLs/3Dbrightfield/NCI-N87/I08_3DCellProfiler_FUCCI/")
+f=list.files(pattern="object_cellCycle.csv", recursive = T)
+f=grep("Archive",f, invert = T, value=T)
+la=sapply(f,function(x) read.csv(x),simplify=F)
+laa=list()
+for(x in names(la)){
+  
+  ## test coordinates are right:
+  ii=grep("FoF1_",la[[x]]$FileName_bright)
+  plot(la[[x]]$X[ii],la[[x]]$Y[ii])
+  plot(la[[x]]$Intensity_MeanIntensity_green,la[[x]]$Intensity_MeanIntensity_red, col=la[[x]]$FoF, log='xy',pch=20)
+  
+  for(y in unique(la[[x]]$FoF)){
+    laa[[paste0(x,y)]]=la[[x]][la[[x]]$FoF==y,]
+  }
+}
+
+lax=sapply(laa, function(x) plyr::count(x$cellCycle), simplify = F)
+for(x in names(lax)){
+  lax[[x]]$pct=100*lax[[x]]$freq/sum(lax[[x]]$freq)
+}
+
+lay=sapply(la, function(x) plyr::count(x$cellCycle), simplify = F)
+for(x in names(lay)){
+  lay[[x]]$pct=100*lay[[x]]$freq/sum(lay[[x]]$freq)
+}
+print(lax)
+
+print(lay)
+
+
 
 
