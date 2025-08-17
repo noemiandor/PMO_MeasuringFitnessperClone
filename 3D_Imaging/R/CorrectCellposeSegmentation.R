@@ -6,7 +6,7 @@ CorrectCellposeSegmentation<- function(ID,signal,INDIR,OUTDIR,doplot=0, eps=2.5,
   r3dDefaults$windowRect=c(0,50, 800, 800) 
   
   ## Create output folders
-  sapply(c("Cells_center_coordinates","All_Cells_coordinates"), function(x) dirCreate(paste0(OUTDIR,filesep,ID,filesep,x), recursive = T,  permission = "a+w"))
+  sapply(c("Cells_center_coordinates","All_Cells_coordinates"), function(x) dir.create(paste0(OUTDIR,filesep,ID,filesep,x), recursive = TRUE))
   
   ############################################################
   ## Correct segmentation: merge ids belonging to same cell ##
@@ -14,7 +14,9 @@ CorrectCellposeSegmentation<- function(ID,signal,INDIR,OUTDIR,doplot=0, eps=2.5,
   coord_$z=coord_$z*ZSTACK_DISTANCE
   o=dbscan::dbscan(coord_[,c("x","y", "z")],eps = eps, minPts = minPts)
   Sys.sleep(10)
-  file.remove("Rplots.pdf")
+  if (file.exists("Rplots.pdf")){
+    file.remove("Rplots.pdf")
+  }
   coord_$id=o$cluster
   fr=plyr::count(o$cluster)
   colnames(fr)[1]="newCellID"

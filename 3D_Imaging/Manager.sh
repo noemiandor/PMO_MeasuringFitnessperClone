@@ -1,5 +1,5 @@
-code='/raid/crdlab/ix1/Projects/M005_MeasuringFitnessPerClone_2019/code/3D_Imaging'
-root='/raid/crdlab/ix1/Projects/M005_MeasuringFitnessPerClone_2019/data/GastricCancerCLs/3Dbrightfield/NCI-N87/'
+code='/Users/saeedalahmari/Downloads/BioInformaticsPaper/PMO_MeasuringFitnessperClone/3D_Imaging'
+root='/Volumes/Expansion/Collaboration/Moffitt_Noemi/BioinformaticsPaper/data/NCI-N87'
 A03=$root/A03_allenModel/
 
 # ## Renome data
@@ -14,8 +14,11 @@ A03=$root/A03_allenModel/
 # channel='01' #brightfield
 # $renameRawData $date $organelle $source $channel
 
+#uncomment the following section to run it on a single FoF
+"""
 ##################
 ####Single FoF####
+
 # FoF='FoF1001_220407_brightfield'
 FoF='FoF9_211110_fluorescent.nucleus'
 # FoF='FoF13_220228_fluorescent.cytoplasm'
@@ -28,7 +31,7 @@ $code/allenModelPredict.sh $FoF mito
 
 ## CellPose
 $code/cellPoseSegment.sh $FoF
-
+"""
 ##################
 #### All FoFs ####
 cd /raid/crdlab/ix1/Projects/M005_MeasuringFitnessPerClone_2019/data/GastricCancerCLs/3Dbrightfield/NCI-N87/A02_ometiffconversion
@@ -36,7 +39,7 @@ cd /raid/crdlab/ix1/Projects/M005_MeasuringFitnessPerClone_2019/data/GastricCanc
 ## ome.tiff conversion
 # python $code/stack2ometiff_conversion.py
 
-declare -a dates=(210803 211110 211215) #211104 210818 220228 210928 211027 
+declare -a dates=(231005 240918) #211104 210818 220228 210928 211027 
 for date in "${dates[@]}"; do
   f=`ls -d *$date*ome.tif`
 

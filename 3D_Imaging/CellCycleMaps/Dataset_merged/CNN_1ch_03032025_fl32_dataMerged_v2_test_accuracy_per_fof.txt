@@ -1,0 +1,9 @@
+FoF accuracy
+FoF1_231005_fluorescent.nucleus 76.13636363636364
+FoF1_240918_fluorescent.nucleus 77.6923076923077
+FoF2_231005_fluorescent.nucleus 70.04830917874396
+FoF2_240918_fluorescent.nucleus 63.63636363636363
+FoF3_231005_fluorescent.nucleus 82.5503355704698
+FoF3_240918_fluorescent.nucleus 67.62820512820514
+FoF4_231005_fluorescent.nucleus 77.77777777777779
+FoF4_240918_fluorescent.nucleus 78.97196261682244

@@ -7,20 +7,20 @@ if [ "$#" -eq 3 ]; then
    cellLine=$3
 fi
 
-A02="/raid/crdlab/ix1/Projects/M005_MeasuringFitnessPerClone_2019/data/GastricCancerCLs/3Dbrightfield/$cellLine/A02_ometiffconversion"
-A03="/raid/crdlab/ix1/Projects/M005_MeasuringFitnessPerClone_2019/data/GastricCancerCLs/3Dbrightfield/$cellLine/A03_allenModel/"$FoF
+A02="/Volumes/Expansion/Collaboration/Moffitt_Noemi/BioinformaticsPaper/$cellLine/A02_ometiffconversion"
+A03="/Volumes/Expansion/Collaboration/Moffitt_Noemi/BioinformaticsPaper/$cellLine/A03_allenModel/"$FoF
 json=$A02/$FoF.$organelle".json"
 csv=$A02/$FoF".csv"
 target=${FoF##*.}
 
 # Prepare json and csv file
-cp /raid/crdlab/ix1/Projects/M005_MeasuringFitnessPerClone_2019/code/3D_Imaging/allenModel/Template.json $json
-cp /raid/crdlab/ix1/Projects/M005_MeasuringFitnessPerClone_2019/code/3D_Imaging/allenModel/Template.csv $csv
-sed -i "s/organelleXX/$organelle/g" $json
-sed -i "s/FoFXX/$FoF/g" $json
-sed -i "s/FoFXX/$FoF/g" $csv
-sed -i "s/cellLineXX/$cellLine/g" $json
-sed -i "s/cellLineXX/$cellLine/g" $csv
+cp /Users/saeedalahmari/Downloads/BioInformaticsPaper/PMO_MeasuringFitnessperClone/3D_Imaging/allenModel/Template.json $json
+cp /Users/saeedalahmari/Downloads/BioInformaticsPaper/PMO_MeasuringFitnessperClone/3D_Imaging/allenModel/Template.csv $csv
+sed -i '' "s/organelleXX/$organelle/g" "$json"
+sed -i '' "s/FoFXX/$FoF/g" "$json"
+sed -i '' "s/FoFXX/$FoF/g" "$csv"
+sed -i '' "s/cellLineXX/$cellLine/g" "$json"
+sed -i '' "s/cellLineXX/$cellLine/g" "$csv"
 
 # Run the predict function. The test images path must be present in $csv file. 
 fnet predict --json $json --gpu_ids 1

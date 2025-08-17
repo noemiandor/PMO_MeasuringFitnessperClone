@@ -12,7 +12,8 @@ import tifffile
 from tifffile import imread
 from matplotlib.backends.backend_pdf import PdfPages
 import glob, os, re
-from aicsimageio import AICSImage, imread, writers
+from aicsimageio import AICSImage, imread
+from aicsimageio.writers import OmeTiffWriter
 from skimage import color, io
 
 #cd '/raid/crdlab/ix1/Projects/M005_MeasuringFitnessPerClone_2019/data/GastricCancerCLs/3Dbrightfield/NCI-N87/'
@@ -59,8 +60,8 @@ def Get_ome_tif_file(signal, target, SaveIMG = "A02_ometiffconversion/FoF3_21080
     Mix_ch630X9_6hr_X3 = np.concatenate((brightfld_array, fluroscense_array ), axis=0)
     print(Mix_ch630X9_6hr_X3.shape)
     
-    with writers.ome_tiff_writer.OmeTiffWriter(SaveIMG, overwrite_file=True) as writer: 
-        writer.save(Mix_ch630X9_6hr_X3, dimension_order="CZYX", channel_names=['brightfield','fluroscense']) 
+    with OmeTiffWriter(SaveIMG, overwrite_file=True) as writer: 
+        writer.save(Mix_ch630X9_6hr_X3, dimension_order="CZYX", channel_names=['brightfield', 'fluroscense']) 
   
     print("\n\nFinalshape of "+ SaveIMG)
     print(Mix_ch630X9_6hr_X3.shape)
@@ -90,9 +91,18 @@ def Get_ome_tif_file_single(signal, SaveIMG = "A02_ometiffconversion/FoF3_210803
     Mix_ch630X9_6hr_X3 = np.concatenate((brightfld_array, brightfld_array ), axis=0)
     # Mix_ch630X9_6hr_X3 = brightfld_array
     print(Mix_ch630X9_6hr_X3.shape)
-    
-    with writers.ome_tiff_writer.OmeTiffWriter(SaveIMG, overwrite_file=True) as writer: 
-        writer.save(Mix_ch630X9_6hr_X3, dimension_order="CZYX", channel_names=['brightfield', 'fluroscense']) 
+    # Save the image
+    OmeTiffWriter.save(
+        Mix_ch630X9_6hr_X3, 
+        SaveIMG, 
+        dim_order="CZYX", 
+        channel_names=['brightfield', 'fluorescence']
+    )
+
+
+
+    #with OmeTiffWriter(SaveIMG, overwrite_file=True) as writer: 
+    #   writer.save(Mix_ch630X9_6hr_X3, dimension_order="CZYX", channel_names=['brightfield', 'fluroscense']) 
   
     print("\n\nFinalshape of "+ SaveIMG)
     print(Mix_ch630X9_6hr_X3.shape)
@@ -100,13 +110,13 @@ def Get_ome_tif_file_single(signal, SaveIMG = "A02_ometiffconversion/FoF3_210803
 
 
 # place the desired path location in the diectory 
-directory = "/raid/crdlab/ix1/Projects/M005_MeasuringFitnessPerClone_2019/data/GastricCancerCLs/3Dbrightfield/NCI-N87/A01_rawData"
+directory = "/Volumes/Expansion/Collaboration/Moffitt_Noemi/BioinformaticsPaper/NCI-N87-2/A01_rawData"
 
 for filename in os.listdir(directory):
     #print(os.path.join(directory, filename)) 
     # select desired subfolder from the entire lists of folders
     # if filename.endswith("fluorescent.nucleus") or filename.endswith("fluorescent.mito") or filename.endswith("fluorescent.cytoplasm"):
-    if filename.startswith("FoF3002006_22"):
+    if filename.startswith("FoF"):
     # if filename.startswith("FoF"):: 
     #  if filename.endswith("fluorescent.mito"): 
     # if filename.endswith("fluorescent.cytoplasm"):
@@ -115,10 +125,12 @@ for filename in os.listdir(directory):
         #print(desiredfile)
         #print(Savefile)
         #only select .tif files
-        signals = desiredfile + "/*.s_*.tif"
+        signals = desiredfile + "/*ch01*.tif"
         targets = desiredfile + "/*.t_*.tif"
         # input desired directory to store the saved .ome files 
-        SaveDir = "/raid/crdlab/ix1/Projects/M005_MeasuringFitnessPerClone_2019/data/GastricCancerCLs/3Dbrightfield/NCI-N87/A02_ometiffconversion/" + Savefile + ".ome.tif"
+        if not os.path.exists("/Volumes/Expansion/Collaboration/Moffitt_Noemi/BioinformaticsPaper/NCI-N87-2/A02_ometiffconversion/"):
+            os.makedirs("/Volumes/Expansion/Collaboration/Moffitt_Noemi/BioinformaticsPaper/NCI-N87-2/A02_ometiffconversion/")
+        SaveDir = "/Volumes/Expansion/Collaboration/Moffitt_Noemi/BioinformaticsPaper/NCI-N87-2/A02_ometiffconversion/" + Savefile + ".ome.tif"
         # call the function : which convert the numpy array to .ome file 
         if len(glob.glob(targets))==0:
             Get_ome_tif_file_single(signal = glob.glob(signals), SaveIMG = SaveDir)
